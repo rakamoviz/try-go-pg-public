@@ -35,13 +35,13 @@ type Execution struct {
 type LoadStatus struct {
 	tableName struct{} `pg:"load_status, discard_unknown_columns"`
 
-	ID          int64      `pg:"id,pk"`
-	Event       string     `pg:"event"`
-	Status      string     `pg:"status"`
-	Description string     `pg:"status"`
-	Timestamp   time.Time  `pg:"timestamp, default:now()"`
-	ExecutionID int64      `pg:"fk_execution"`
-	Execution   *Execution `pg:"rel:has-one, fk:fk_execution"`
+	ID          int64     `pg:"id,pk"`
+	Event       string    `pg:"event"`
+	Status      string    `pg:"status"`
+	Description string    `pg:"status"`
+	Timestamp   time.Time `pg:"timestamp, default:now()"`
+	ExecutionID int64     `pg:"fk_execution"`
+	//Execution   *Execution `pg:"rel:has-one, fk:fk_execution"`
 }
 
 func ExampleDB_Model() {
@@ -128,24 +128,43 @@ func ExampleDB_Model() {
 		fmt.Println(loadStatus3)
 	*/
 
+	/*
+		execution1 := new(Execution)
+		err := db.Model(execution1).Where("id = ?", 1).Relation("LoadStatuses").Relation("LoadStatuses.Execution").Select()
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(execution1)
+		fmt.Println(execution1.LoadStatuses[1].Execution)
+
+		loadStatus1 := new(LoadStatus)
+		err = db.Model(loadStatus1).Where("load_status.id = ?", 1).Relation("Execution").Select()
+
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(loadStatus1)
+	*/
+
 	execution1 := new(Execution)
-	err := db.Model(execution1).Where("id = ?", 1).Relation("LoadStatuses").Relation("LoadStatuses.Execution").Select()
+	err := db.Model(execution1).
+		Where("partner = ?", "MMS_TECHNOLOGY_BR").
+		Order("timestamp DESC").
+		Limit(1).
+		Relation("LoadStatuses", func(q *orm.Query) (*orm.Query, error) {
+			return q.Order("timestamp DESC"), nil
+		}).
+		Select()
 
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println(execution1)
-	fmt.Println(execution1.LoadStatuses[1].Execution)
-
-	loadStatus1 := new(LoadStatus)
-	err = db.Model(loadStatus1).Where("load_status.id = ?", 1).Relation("Execution").Select()
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(loadStatus1)
+	fmt.Println(execution1.LoadStatuses)
 }
 
 // createSchema creates database schema for User and Story models.
